@@ -1,0 +1,153 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Never cancel a run on main that may be deploying.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Pinned per tools/toolchain.json (NFR-010).
+  PYTHON_VERSION: "3.12.1"
+  BUILD_PACKAGES: "cmake==4.4.3 ninja==1.13.2"
+  ARM_GCC_VERSION: "13.3.1"
+  # Firmware ELF produced by the target build; packaged to .hex below.
+  FIRMWARE_ELF: build-fw/firmware/app/dfcs_firmware.elf
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-tools
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          packages: ${{ env.BUILD_PACKAGES }} pytest==9.0.2
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run unit tests (GoogleTest, Unity, pytest via CTest)
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/Testing
+          if-no-files-found: ignore
+
+  package-hex:
+    name: Package firmware as HEX
+    needs: build-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-tools
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          packages: ${{ env.BUILD_PACKAGES }}
+
+      - name: Install GNU Arm toolchain
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
+        with:
+          release: ${{ env.ARM_GCC_VERSION }}
+
+      - name: Build firmware and convert ELF to HEX
+        run: |
+          mkdir -p dist
+          # Firmware target and ARM toolchain file are not in the repo yet; skip until they exist.
+          if [ ! -f cmake/arm-none-eabi.cmake ]; then
+            echo "::warning::cmake/arm-none-eabi.cmake not found; firmware build skipped"
+            exit 0
+          fi
+          cmake -S . -B build-fw -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake \
+            -DCMAKE_BUILD_TYPE=Release -DDFCS_BUILD_TESTS=OFF
+          cmake --build build-fw
+          arm-none-eabi-objcopy -O ihex "${FIRMWARE_ELF}" "dist/dfcs-${GITHUB_SHA::8}.hex"
+          (cd dist && sha256sum -- *.hex > SHA256SUMS)
+
+      - name: Upload HEX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dfcs-firmware-hex
+          path: dist/
+          if-no-files-found: warn
+
+  security-scan:
+    name: Security scans
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-tools
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          packages: ${{ env.BUILD_PACKAGES }} semgrep==1.183.0
+
+      - name: Semgrep (SAST)
+        run: semgrep scan --config p/c --config p/python --config p/secrets --error --sarif --output semgrep.sarif .
+
+      - name: Upload Semgrep SARIF
+        if: always() && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: c-cpp
+          build-mode: manual
+
+      - name: Build for CodeQL
+        run: |
+          cmake -S . -B build-codeql -G Ninja -DDFCS_BUILD_TESTS=OFF
+          cmake --build build-codeql
+
+      - name: CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: Dependency review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+
+  deploy-aws:
+    name: Deploy to AWS (placeholder)
+    needs: [build-test, package-hex, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: aws-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      # TODO: download the dfcs-firmware-hex artifact (absent until the firmware target exists), configure the OIDC role
+      # (aws-actions/configure-aws-credentials) and upload to the target AWS service.
+      - name: Deploy to AWS (not implemented)
+        run: echo "AWS deployment placeholder; nothing deployed."
