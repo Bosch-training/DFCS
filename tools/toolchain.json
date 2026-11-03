@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "note": "Pinned toolchain (NFR-010). Versions here are the only ones CI and local builds may use. POC only; not flight-ready (NFR-017).",
+  "tools": {
+    "cmake": {
+      "version": "4.4.3",
+      "command": ["cmake", "--version"],
+      "pattern": "cmake version (\\d+\\.\\d+\\.\\d+)"
+    },
+    "ninja": {
+      "version": "1.13.2",
+      "command": ["ninja", "--version"],
+      "pattern": "^(\\d+\\.\\d+\\.\\d+)"
+    },
+    "python": {
+      "version": "3.12.1",
+      "command": ["python3", "--version"],
+      "pattern": "Python (\\d+\\.\\d+\\.\\d+)"
+    },
+    "pytest": {
+      "version": "9.0.2",
+      "command": ["pytest", "--version"],
+      "pattern": "pytest (\\d+\\.\\d+\\.\\d+)"
+    },
+    "ruff": {
+      "version": "0.15.9",
+      "command": ["ruff", "--version"],
+      "pattern": "ruff (\\d+\\.\\d+\\.\\d+)"
+    },
+    "clang-format": {
+      "version": "23.1.1",
+      "command": ["clang-format", "--version"],
+      "pattern": "clang-format version (\\d+\\.\\d+\\.\\d+)"
+    },
+    "clang-tidy": {
+      "version": "22.1.8",
+      "command": ["clang-tidy", "--version"],
+      "pattern": "LLVM version (\\d+\\.\\d+\\.\\d+)"
+    },
+    "gnu-arm-toolchain": {
+      "version": "13.3.1",
+      "command": ["arm-none-eabi-gcc", "--version"],
+      "pattern": "\\) (\\d+\\.\\d+\\.\\d+)",
+      "optional": true,
+      "needed_by": "firmware target build (not host)"
+    },
+    "cppcheck": {
+      "version": "2.17.1",
+      "command": ["cppcheck", "--version"],
+      "pattern": "Cppcheck (\\d+\\.\\d+(?:\\.\\d+)?)",
+      "optional": true,
+      "needed_by": "FND-04 static analysis"
+    },
+    "cmake-format": {
+      "version": "0.6.13",
+      "command": ["cmake-format", "--version"],
+      "pattern": "(\\d+\\.\\d+\\.\\d+)",
+      "optional": true,
+      "needed_by": "FND-04 formatting"
+    },
+    "gcovr": {
+      "version": "8.3",
+      "command": ["gcovr", "--version"],
+      "pattern": "gcovr (\\d+\\.\\d+(?:\\.\\d+)?)",
+      "optional": true,
+      "needed_by": "FND-06 coverage"
+    }
+  },
+  "libraries": {
+    "googletest": {
+      "version": "1.17.0",
+      "repository": "https://github.com/google/googletest.git",
+      "commit": "52eb8108c5bdec04579160ae17225d66034bd723"
+    },
+    "unity": {
+      "version": "2.6.1",
+      "repository": "https://github.com/ThrowTheSwitch/Unity.git",
+      "commit": "cbcd08fa7de711053a3deec6339ee89cad5d2697"
+    }
+  }
+}
