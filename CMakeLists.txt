@@ -14,3 +14,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Portable flight-control core, buildable for the desktop host (FR-070).
 add_subdirectory(firmware/core)
+
+option(DFCS_BUILD_TESTS "Build host unit tests" ON)
+if(DFCS_BUILD_TESTS)
+  enable_testing()
+  include(DfcsTestFrameworks)
+  include(GoogleTest)
+  add_subdirectory(tests/unit)
+endif()
