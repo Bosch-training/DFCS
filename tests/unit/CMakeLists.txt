@@ -9,6 +9,21 @@ target_include_directories(dfcs_ctrl_pid_tests
 target_link_libraries(dfcs_ctrl_pid_tests PRIVATE dfcs_core GTest::gtest_main)
 gtest_discover_tests(dfcs_ctrl_pid_tests)
 
+# STA-01 (DC-17): FlightStateMachine and DenyAllGuard host tests, linked to the core library only.
+add_executable(flight_state_machine_tests state/flight_state_machine_test.cpp)
+target_include_directories(flight_state_machine_tests PRIVATE
+  "${PROJECT_SOURCE_DIR}/firmware/core/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/state")
+target_link_libraries(flight_state_machine_tests PRIVATE dfcs_core GTest::gtest_main)
+gtest_discover_tests(flight_state_machine_tests)
+
+add_executable(deny_all_guard_tests state/deny_all_guard_test.cpp)
+target_include_directories(deny_all_guard_tests PRIVATE
+  "${PROJECT_SOURCE_DIR}/firmware/core/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/state")
+target_link_libraries(deny_all_guard_tests PRIVATE dfcs_core GTest::gtest_main)
+gtest_discover_tests(deny_all_guard_tests)
+
 add_executable(harness_unity_smoke harness/smoke_unity.c)
 target_link_libraries(harness_unity_smoke PRIVATE unity)
 add_test(NAME harness_unity_smoke COMMAND harness_unity_smoke)
