@@ -140,17 +140,24 @@ jobs:
         uses: actions/dependency-review-action@v4
 
   deploy-aws:
-    name: Deploy to AWS (placeholder)
+    name: Deploy to AWS EC2
     needs: [build-test, package-hex, security-scan]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: aws-production
-    permissions:
-      contents: read
-      id-token: write
     steps:
-      # TODO: download the dfcs-firmware-hex artifact (absent until the firmware target exists), configure the OIDC role
-      # (aws-actions/configure-aws-credentials) and upload to the target AWS service.
-      - name: Deploy to AWS (not implemented)
-        run: echo "AWS deployment placeholder; nothing deployed."
+      - name: Create file on EC2 over SSH
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          install -m 600 /dev/null "$RUNNER_TEMP/ec2_key"
+          printf '%s\n' "$EC2_SSH_KEY" > "$RUNNER_TEMP/ec2_key"
+          # Host key checking is disabled by request.
+          ssh -i "$RUNNER_TEMP/ec2_key" \
+            -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "$EC2_USER@$EC2_HOST" \
+            "printf '%s\n' 'Happy Flying Drones !!!' > ~/happy-flying-drones.txt"
+          rm -f "$RUNNER_TEMP/ec2_key"
