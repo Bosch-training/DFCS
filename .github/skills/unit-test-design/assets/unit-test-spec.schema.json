@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dfcs-unit-test-spec-row",
+  "title": "DFCS unit test specification row",
+  "description": "One CSV row of docs/test-specifications/<JIRA-ID>-unit-test-spec.csv. scripts/validate_spec.py reads this file as the source of truth for column order, required cells, enums, and patterns.",
+  "type": "object",
+  "x-columns": [
+    "tc_id",
+    "status",
+    "title",
+    "requirement_ids",
+    "module",
+    "type",
+    "framework",
+    "preconditions",
+    "mocks",
+    "inputs",
+    "steps",
+    "expected_result",
+    "evidence",
+    "notes"
+  ],
+  "x-optional-empty": ["notes"],
+  "additionalProperties": false,
+  "required": [
+    "tc_id",
+    "status",
+    "title",
+    "requirement_ids",
+    "module",
+    "type",
+    "framework",
+    "preconditions",
+    "mocks",
+    "inputs",
+    "steps",
+    "expected_result",
+    "evidence"
+  ],
+  "properties": {
+    "tc_id": {
+      "type": "string",
+      "pattern": "^TC-[A-Z]{2,5}-[0-9]{3}$",
+      "description": "Areas per tests/AGENTS.md and SRS 11.3 (BOOT, SAFE, SENS, STATE, CTRL, MIX, COMM, SIM, CI); the backlog also uses EST and RTOS."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Existing", "NEW"],
+      "description": "Existing = ID from design or backlog. NEW = needs an RTM row."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Behaviour stated as 'given X, the unit does Y'."
+    },
+    "requirement_ids": {
+      "type": "string",
+      "pattern": "^N?FR-[0-9]{3}(;N?FR-[0-9]{3})*$",
+      "description": "';'-separated SRS requirement IDs."
+    },
+    "module": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unit under test, as named in the design doc."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["nominal", "boundary", "fault", "negative"]
+    },
+    "framework": {
+      "type": "string",
+      "enum": ["GoogleTest", "Unity"]
+    },
+    "preconditions": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mocks": {
+      "type": "string",
+      "minLength": 1,
+      "description": "'none' or ';'-separated '<dependency>: <mocked behaviour>'."
+    },
+    "inputs": {
+      "type": "string",
+      "minLength": 1
+    },
+    "steps": {
+      "type": "string",
+      "pattern": "^1\\. .+",
+      "description": "Single line, numbered steps separated by ' | '."
+    },
+    "expected_result": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Observable, deterministic outcome."
+    },
+    "evidence": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What proves pass or fail (assert, log, coverage report)."
+    },
+    "notes": {
+      "type": "string",
+      "description": "TBD (...) values with resolving story or OD-xxx, hard rule tags, design gaps."
+    }
+  }
+}
